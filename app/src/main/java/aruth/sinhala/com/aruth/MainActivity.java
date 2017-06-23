@@ -1,6 +1,7 @@
 package aruth.sinhala.com.aruth;
 
 
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.app.AlertDialog;
@@ -36,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         webview = (WebView) findViewById(R.id.webView);
-        webview.setWebViewClient(new MyBrowser());
+        webview.setWebViewClient( new MyBrowser());
 
         String url = "http://13.58.202.127";
         webview.setWebChromeClient(new WebChromeClient());
@@ -46,54 +47,27 @@ public class MainActivity extends AppCompatActivity {
         webview.loadUrl(url);
 
 
-        SendfeedbackJob job = new SendfeedbackJob();
-        job.execute();
+        Updates update = new Updates();
+        update.execute();
 
 
     }
-
-    public void showDialog(String message) {
-
-    }
-
-    public String updateRequest() {
-        int thisAppVesion = 0;
-        String updateURL = "http://13.58.202.127/version.php";
-        try {
-            HttpClient httpclient = new DefaultHttpClient();
-            HttpResponse response = null;
-
-            response = httpclient.execute(new HttpGet(new URI(updateURL)));
-//
-//        StatusLine statusLine = response.getStatusLine();
-//        if(statusLine.getStatusCode() == HttpStatus.SC_OK){
-//            ByteArrayOutputStream out = new ByteArrayOutputStream();
-//            response.getEntity().writeTo(out);
-//            String responseString = out.toString();
-//            out.close();
-//            return responseString;
-//        } else{
-//            //Closes the connection.
-//            response.getEntity().getContent().close();
-//            return "false";
-//        }
-            return response.toString();
-        } catch (Exception e) {
-            return e.toString();
-        }
-    }
-
 
     private class MyBrowser extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-            view.loadUrl(url);
-            return true;
+            if (Uri.parse(url).getHost().equals("13.58.202.127")) {
+                return false;
+            }
+            else {
+                view.loadUrl(url);
+                return true;
+            }
         }
     }
 
 
-    class SendfeedbackJob extends AsyncTask<String, Void, String> {
+    class Updates extends AsyncTask<String, Void, String> {
 
         @Override
         protected String doInBackground(String[] params) {
