@@ -1,12 +1,12 @@
 package aruth.sinhala.com.aruth;
 
 
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.app.AlertDialog;
-import android.os.Looper;
-import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.webkit.WebChromeClient;
@@ -19,16 +19,16 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.URI;
 
-import static android.provider.ContactsContract.CommonDataKinds.Website.URL;
-import static java.lang.Integer.parseInt;
 
 public class MainActivity extends AppCompatActivity {
-    private WebView webview;
+    public static WebView webview;
+    public static String url = "13.58.202.127";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,14 +37,14 @@ public class MainActivity extends AppCompatActivity {
 
 
         webview = (WebView) findViewById(R.id.webView);
-        webview.setWebViewClient( new MyBrowser());
+        webview.setWebViewClient(new MyBrowser());
 
-        String url = "http://13.58.202.127";
+
         webview.setWebChromeClient(new WebChromeClient());
         webview.getSettings().setLoadsImagesAutomatically(true);
         webview.getSettings().setJavaScriptEnabled(true);
         webview.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
-        webview.loadUrl(url);
+        webview.loadUrl("http://" + url);
 
 
         Updates update = new Updates();
@@ -56,11 +56,10 @@ public class MainActivity extends AppCompatActivity {
     private class MyBrowser extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-            if (Uri.parse(url).getHost().equals("13.58.202.127")) {
+            if (Uri.parse(url).getHost().equals(MainActivity.url)) {
                 return false;
-            }
-            else {
-                view.loadUrl(url);
+            } else {
+                view.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
                 return true;
             }
         }
@@ -71,14 +70,14 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected String doInBackground(String[] params) {
-            int thisAppVesion = 0;//change this everytime updating the app
+            int thisAppVesion = 1;//change this everytime updating the app
             //this can be used to check internet connectivity too
-            String updateURL = "http://13.58.202.127/version.php";
+            String versionURL = "http://" + MainActivity.url + "/androidapp/version.php";
             try {
                 HttpClient httpclient = new DefaultHttpClient();
                 HttpResponse response = null;
 
-                response = httpclient.execute(new HttpGet(new URI(updateURL)));
+                response = httpclient.execute(new HttpGet(new URI(versionURL)));
 
                 StatusLine statusLine = response.getStatusLine();
                 if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
@@ -86,33 +85,57 @@ public class MainActivity extends AppCompatActivity {
                     response.getEntity().writeTo(out);
                     String responseString = out.toString();
                     out.close();
-                    int newAppVersion = Integer.parseInt(responseString.trim());
-                    if (newAppVersion > thisAppVesion) {
-                        return "true";
+
+                    if (new JSONObject(responseString).getInt("newversion") > thisAppVesion) {
+                        return responseString;
                     } else {
-                        return "false1";
+                        return null;
                     }
-//                    return "_"+responseString.trim()+"_";
                 } else {
                     //Closes the connection.
                     response.getEntity().getContent().close();
-                    return "false2";
+                    return null;
                 }
             } catch (Exception e) {
-                //return "false3";
-                return e.toString();
+
+                return "no_internet";
             }
 
         }
 
         @Override
         protected void onPostExecute(String message) {
-            if (message == "true") {
+            if (message != null) {
+                try {
+                    JSONObject jsonObject = new JSONObject(message);
+                    final String apkurl = jsonObject.getString("apkurl");
+                    AlertDialog.Builder dlgAlert = new AlertDialog.Builder(MainActivity.this);
+                    dlgAlert.setMessage(jsonObject.getString("message"));
+                    dlgAlert.setTitle(jsonObject.getString("title"));
+                    dlgAlert.setPositiveButton(jsonObject.getString("positivebutton"), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            MainActivity.webview.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(apkurl)));
+                        }
+                    });
+                    dlgAlert.setNegativeButton(jsonObject.getString("negativebutton"), null);
+                    dlgAlert.create().show();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if(message=="no_internet"){
+                MainActivity.webview.loadUrl("about:blank");
                 AlertDialog.Builder dlgAlert = new AlertDialog.Builder(MainActivity.this);
-                dlgAlert.setMessage("මෙම යෙදවුම සඳහා නව යාවත්කාලයක් ඇත. කරුණාකර නව යාවත්කාලය ස්ථාපනය කරගන්න.");
-                dlgAlert.setTitle("යාවත්කාලීන කරන්න!");
-                dlgAlert.setPositiveButton("හරි", null);
-                dlgAlert.setCancelable(true);
+                dlgAlert.setTitle("No internet connection!");
+                dlgAlert.setMessage("කරුණාකර අන්තර්ජාලයට සම්බන්ධ කර, යෙදුම නැවත විවෘත කරන්න.");
+                dlgAlert.setPositiveButton("හරි", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        System.exit(0);
+                    }
+                });
                 dlgAlert.create().show();
             }
         }
