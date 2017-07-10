@@ -1,6 +1,7 @@
 package aruth.sinhala.com.aruth;
 
 
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -28,7 +29,7 @@ import java.net.URI;
 
 public class MainActivity extends AppCompatActivity {
     public static WebView webview;
-    public static String url = "13.58.202.127";
+    public static String url = "www.sinhalaaruth.tk";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,10 +38,27 @@ public class MainActivity extends AppCompatActivity {
 
 
         webview = (WebView) findViewById(R.id.webView);
+
         webview.setWebViewClient(new MyBrowser());
+        //webview.setWebChromeClient(new WebChromeClient());
+        webview.setWebChromeClient(new WebChromeClient() {
+            private ProgressDialog mProgress;
+
+            @Override
+            public void onProgressChanged(WebView view, int progress) {
+                if (mProgress == null) {
+                    mProgress = new ProgressDialog(MainActivity.this);
+                    mProgress.show();
+                }
+                mProgress.setMessage("Loading");
+                if (progress == 100) {
+                    mProgress.dismiss();
+                    mProgress = null;
+                }
+            }
+        });
 
 
-        webview.setWebChromeClient(new WebChromeClient());
         webview.getSettings().setLoadsImagesAutomatically(true);
         webview.getSettings().setJavaScriptEnabled(true);
         webview.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
@@ -56,6 +74,8 @@ public class MainActivity extends AppCompatActivity {
     private class MyBrowser extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            Updates update = new Updates();
+            update.execute();
             if (Uri.parse(url).getHost().equals(MainActivity.url)) {
                 return false;
             } else {
@@ -63,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         }
+
     }
 
 
@@ -70,8 +91,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected String doInBackground(String[] params) {
-            int thisAppVesion = 1;//change this everytime updating the app
-            //this can be used to check internet connectivity too
+            int thisAppVesion = 3;//change this everytime updating the app
             String versionURL = "http://" + MainActivity.url + "/androidapp/version.php";
             try {
                 HttpClient httpclient = new DefaultHttpClient();
@@ -97,7 +117,6 @@ public class MainActivity extends AppCompatActivity {
                     return null;
                 }
             } catch (Exception e) {
-
                 return "no_internet";
             }
 
