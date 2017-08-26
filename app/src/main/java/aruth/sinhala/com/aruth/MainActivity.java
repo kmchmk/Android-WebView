@@ -6,19 +6,21 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 public class MainActivity extends AppCompatActivity {
     private static final String URL = "www.sinhalaaruth.tk";
+    private WebView webview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        WebView webview = (WebView) findViewById(R.id.webView);
+        webview = (WebView) findViewById(R.id.webView);
         webview.setWebViewClient(new MyBrowser());
         webview.setWebChromeClient(new MyChromeBrowser());
         webview.getSettings().setLoadsImagesAutomatically(true);
@@ -26,11 +28,21 @@ public class MainActivity extends AppCompatActivity {
         webview.loadUrl("http://" + URL);
     }
 
+    @Override
+    public void onBackPressed() {
+        if (webview.canGoBack()) {
+            webview.goBack();
+        }
+        else{
+            finish();
+        }
+    }
+
     private class MyBrowser extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
 
-            if(url.equals("mailto:sinhalaaruth@gmail.com")){
+            if (url.equals("mailto:sinhalaaruth@gmail.com")) {
                 Intent i = new Intent(Intent.ACTION_SEND);
                 i.setType("text/plain");
                 i.putExtra(Intent.EXTRA_EMAIL, new String[]{"sinhalaaruth@gmail.com"});
@@ -38,11 +50,9 @@ public class MainActivity extends AppCompatActivity {
                 i.putExtra(Intent.EXTRA_TEXT, "සිංහල අරුත් කණ්ඩායම වෙත,");
                 startActivity(i);
                 return true;
-            }
-            else if (Uri.parse(url).getHost().equals(URL)) {
+            } else if (Uri.parse(url).getHost().equals(URL)) {
                 return false;
-            }
-            else {
+            } else {
                 view.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
                 return true;
             }
@@ -51,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
     private class MyChromeBrowser extends WebChromeClient {
         private ProgressDialog mProgress;
+
         @Override
         public void onProgressChanged(WebView view, int progress) {
             if (mProgress == null) {
